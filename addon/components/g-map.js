@@ -7,6 +7,7 @@ export default Ember.Component.extend({
   layout,
   classNames: ['g-map'],
   bannedOptions: Ember.A(['center', 'zoom']),
+  idleListener: null,
 
   init() {
     this._super(...arguments);
@@ -30,16 +31,47 @@ export default Ember.Component.extend({
 
   didInsertElement() {
     this._super(...arguments);
-    if (isEmpty(this.get('map'))
-      && (typeof FastBoot === 'undefined')) {
+    run.scheduleOnce('afterRender', this, 'initializeMap');
+  },
+
+  initializeMap() {
+    if (typeof FastBoot !== 'undefined') {
+      return false;
+    }
+
+    let map = this.get('map');
+
+    if (isEmpty(this.get('map'))) {
       const canvas = this.$().find('.g-map-canvas').get(0);
       const options = this.get('permittedOptions');
-      this.set('map', new google.maps.Map(canvas, options));
+
+      map = new google.maps.Map(canvas, options);
+      const idleListener = google.maps.event.addListener(map, 'idle', () => {
+        run.once(this, 'initialResize', true);
+      });
+
+      this.setProperties({ map, idleListener });
     }
+
     this.setZoom();
     this.setCenter();
+
     if (this.get('shouldFit')) {
       this.fitToMarkers();
+    }
+  },
+
+  resizeMap(fromEvent = false) {
+    const map = this.get('map');
+    const idleListener = this.get('idleListener');
+
+    if (map) {
+      google.maps.event.trigger(map, 'resize');
+    }
+
+    if (fromEvent) {
+      google.maps.event.removeListener(idleListener);
+      this.set('idleListener', null);
     }
   },
 
@@ -124,13 +156,8 @@ export default Ember.Component.extend({
     const map = this.get('map');
     const bounds = new google.maps.LatLngBounds();
 
-    markers.forEach((marker) => {
-      if (isPresent(marker.get('viewport'))) {
-        bounds.union(marker.get('viewport'));
-      } else {
-        bounds.extend(new google.maps.LatLng(marker.get('lat'), marker.get('lng')));
-      }
-    });
+    markers.forEach((marker) => bounds.extend(new google.maps.LatLng(marker.get('lat'), marker.get('lng'))));
+    map.panToBounds(bounds);
     map.fitBounds(bounds);
   },
 
