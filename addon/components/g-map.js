@@ -53,11 +53,11 @@ export default Ember.Component.extend({
       this.setProperties({ map, idleListener });
     }
 
-    this.setZoom();
-    this.setCenter();
+    run.once(this, 'setZoom');
+    run.once(this, 'setCenter');
 
     if (this.get('shouldFit')) {
-      this.fitToMarkers();
+      run.once(this, 'fitToMarkers');
     }
   },
 
@@ -65,11 +65,8 @@ export default Ember.Component.extend({
     const map = this.get('map');
     const idleListener = this.get('idleListener');
 
-    if (map) {
+    if (map && idleListener) {
       google.maps.event.trigger(map, 'resize');
-    }
-
-    if (idleListener) {
       google.maps.event.removeListener(idleListener);
       this.set('idleListener', null);
     }
@@ -148,13 +145,17 @@ export default Ember.Component.extend({
       return isPresent(marker.get('lat')) && isPresent(marker.get('lng'));
     });
 
-    if (markers.length === 0
-        || (typeof FastBoot !== 'undefined')) {
+    if (markers.length === 0 || (typeof FastBoot !== 'undefined')) {
       return;
     }
 
     const map = this.get('map');
     const bounds = new google.maps.LatLngBounds();
+
+    if (isEmpty(map)) {
+      run.later(this, 'fitToMarkers', 500);
+      return;
+    }
 
     markers.forEach((marker) => bounds.extend(new google.maps.LatLng(marker.get('lat'), marker.get('lng'))));
     map.panToBounds(bounds);
