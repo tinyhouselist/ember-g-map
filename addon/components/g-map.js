@@ -8,6 +8,7 @@ export default Ember.Component.extend({
   classNames: ['g-map'],
   bannedOptions: Ember.A(['center', 'zoom']),
   idleListener: null,
+  mapRetries: 0,
 
   init() {
     this._super(...arguments);
@@ -57,7 +58,7 @@ export default Ember.Component.extend({
     run.once(this, 'setCenter');
 
     if (this.get('shouldFit')) {
-      run.once(this, 'fitToMarkers');
+      run.next(this, 'fitToMarkers');
     }
   },
 
@@ -141,6 +142,11 @@ export default Ember.Component.extend({
   }),
 
   fitToMarkers() {
+    if (this.get('mapRetries') > 10) {
+      this.set('mapRetries', 0);
+      return;
+    }
+
     const markers = this.get('markers').filter((marker) => {
       return isPresent(marker.get('lat')) && isPresent(marker.get('lng'));
     });
@@ -153,6 +159,7 @@ export default Ember.Component.extend({
     const bounds = new google.maps.LatLngBounds();
 
     if (isEmpty(map)) {
+      this.incrementProperty('mapRetries');
       run.later(this, 'fitToMarkers', 500);
       return;
     }
@@ -160,6 +167,7 @@ export default Ember.Component.extend({
     markers.forEach((marker) => bounds.extend(new google.maps.LatLng(marker.get('lat'), marker.get('lng'))));
     map.panToBounds(bounds);
     map.fitBounds(bounds);
+    this.set('mapRetries', 0);
   },
 
   groupMarkerClicked(marker, group) {
