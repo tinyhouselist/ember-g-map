@@ -30,15 +30,33 @@ export default Ember.Component.extend({
 
   didInsertElement() {
     this._super(...arguments);
-    if (isEmpty(this.get('map'))
-      && (typeof FastBoot === 'undefined')) {
+
+    let map = this.get('map');
+
+    if (isEmpty(map) && (typeof FastBoot === 'undefined')) {
       const canvas = this.$().find('.g-map-canvas').get(0);
       const options = this.get('permittedOptions');
       this.set('map', new google.maps.Map(canvas, options));
+      const idleListener = google.maps.event.addListener(this.get('map'), 'idle', () => {
+        this.resizeMap();
+      });
+      this.set('idleListener', idleListener);
     }
     this.setZoom();
     this.setCenter();
     if (this.get('shouldFit')) {
+      this.fitToMarkers();
+    }
+  },
+
+  resizeMap() {
+    const map = this.get('map');
+    const idleListener = this.get('idleListener');
+
+    if (map && idleListener) {
+      google.maps.event.trigger(map, 'resize');
+      google.maps.event.removeListener(idleListener);
+      this.set('idleListener', null);
       this.fitToMarkers();
     }
   },
@@ -125,11 +143,7 @@ export default Ember.Component.extend({
     const bounds = new google.maps.LatLngBounds();
 
     markers.forEach((marker) => {
-      if (isPresent(marker.get('viewport'))) {
-        bounds.union(marker.get('viewport'));
-      } else {
-        bounds.extend(new google.maps.LatLng(marker.get('lat'), marker.get('lng')));
-      }
+      bounds.extend(new google.maps.LatLng(marker.get('lat'), marker.get('lng')));
     });
     map.fitBounds(bounds);
   },
