@@ -41,13 +41,13 @@ export default Ember.Component.extend({
 
     let map = this.get('map');
 
-    if (isEmpty(this.get('map'))) {
+    if (isEmpty(map)) {
       const canvas = this.$().find('.g-map-canvas').get(0);
       const options = this.get('permittedOptions');
 
       map = new google.maps.Map(canvas, options);
       const idleListener = google.maps.event.addListener(map, 'idle', () => {
-        run.once(this, 'initialResize', true);
+        this.resizeMap();
       });
 
       this.setProperties({ map, idleListener });
@@ -61,7 +61,7 @@ export default Ember.Component.extend({
     }
   },
 
-  resizeMap(fromEvent = false) {
+  resizeMap() {
     const map = this.get('map');
     const idleListener = this.get('idleListener');
 
@@ -69,7 +69,7 @@ export default Ember.Component.extend({
       google.maps.event.trigger(map, 'resize');
     }
 
-    if (fromEvent) {
+    if (idleListener) {
       google.maps.event.removeListener(idleListener);
       this.set('idleListener', null);
     }
