@@ -41,14 +41,37 @@ const GMapInfowindowComponent = Ember.Component.extend({
     this.setMap();
     this.setMarker();
     this.setOptions();
+    this.setStyles();
   },
 
   willDestroyElement() {
     this.close();
 
+    if (this.get('domListener')) {
+      google.maps.event.removeListener(this.get('domListener'));
+    }
+
     if (this.get('hasMarker')) {
       this.get('mapContext').unregisterInfowindow();
     }
+  },
+
+  setStyles() {
+    const infowindow = this.get('infowindow');
+
+    if (!infowindow || this.get('domListener')) {
+      return;
+    }
+
+    const domListener = google.maps.event.addListener(infowindow, 'domready', function() {
+      let iwOuter = Ember.$('.gm-style-iw');
+      let iwBackground = iwOuter.prev();
+
+      iwBackground.children(':nth-child(2)').css({ 'display': 'none' });
+      iwBackground.children(':nth-child(4)').css({ 'display': 'none' });
+    });
+
+    this.set('domListener', domListener);
   },
 
   optionsChanged: observer(...allowedOptions, function() {
