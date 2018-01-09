@@ -67,6 +67,8 @@ const GMapInfowindowComponent = Ember.Component.extend({
       let iwOuter = Ember.$('.gm-style-iw');
       let iwBackground = iwOuter.prev();
 
+      iwOuter.prev('div').css({ 'box-shadow': 'rgba(0, 0, 0, 0.3) 0px 1px 6px', 'z-index': '999999' });
+      iwOuter.next('div').css({ opacity: '0.7', right: '38px', top: '3px', 'background': '#315075', 'color': '#FFF' });
       iwBackground.children(':nth-child(2)').css({ 'display': 'none' });
       iwBackground.children(':nth-child(4)').css({ 'display': 'none' });
     });
