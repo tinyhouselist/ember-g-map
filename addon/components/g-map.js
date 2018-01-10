@@ -37,15 +37,15 @@ export default Ember.Component.extend({
       const canvas = this.$().find('.g-map-canvas').get(0);
       const options = this.get('permittedOptions');
       this.set('map', new google.maps.Map(canvas, options));
-      const idleListener = google.maps.event.addListener(this.get('map'), 'idle', () => {
-        this.resizeMap();
-      });
-      this.set('idleListener', idleListener);
     }
     this.setZoom();
     this.setCenter();
     if (this.get('shouldFit')) {
       this.fitToMarkers();
+      let idleListener = google.maps.event.addListener(this.get('map'), 'idle', () => {
+        this.resizeMap();
+      });
+      this.set('idleListener', idleListener);
     }
   },
 
